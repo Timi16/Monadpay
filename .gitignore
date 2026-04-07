@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+cache/
+deployments/router.json
+
+contracts/out/*
+!contracts/out/MonadPayRouter.sol/
+contracts/out/MonadPayRouter.sol/*
+!contracts/out/MonadPayRouter.sol/MonadPayRouter.json
+!contracts/out/MockERC20.sol/
+contracts/out/MockERC20.sol/*
+!contracts/out/MockERC20.sol/MockERC20.json

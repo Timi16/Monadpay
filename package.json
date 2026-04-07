@@ -1,0 +1,19 @@
+{
+  "name": "monadpay",
+  "private": true,
+  "packageManager": "yarn@1.22.22",
+  "workspaces": [
+    "packages/sdk",
+    "apps/backend"
+  ],
+  "scripts": {
+    "test:contracts": "forge test --offline -vvv",
+    "test:sdk": "yarn workspace @monadpay/sdk test",
+    "test:backend": "yarn workspace @monadpay/backend test",
+    "test": "concurrently \"yarn test:contracts\" \"yarn test:sdk\" \"yarn test:backend\"",
+    "build": "yarn workspaces run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
