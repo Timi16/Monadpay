@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 interface IMonadPayRouter {
     event PaymentReceived(
-        bytes32 indexed reference,
+        bytes32 indexed paymentReference,
         address indexed payer,
         address indexed merchant,
         address token,
@@ -12,7 +12,7 @@ interface IMonadPayRouter {
     );
 
     function payWithToken(
-        bytes32 reference,
+        bytes32 paymentReference,
         address merchant,
         address token,
         uint256 amount,
@@ -20,7 +20,7 @@ interface IMonadPayRouter {
     ) external;
 
     function payWithNative(
-        bytes32 reference,
+        bytes32 paymentReference,
         address merchant,
         string calldata memo
     ) external payable;
