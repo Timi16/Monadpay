@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentStatus {
+  PENDING
+  SETTLED
+  EXPIRED
+  REFUNDED
+}
+
+model Merchant {
+  id            String          @id @default(uuid()) @db.Uuid
+  address       String          @unique
+  name          String
+  logoUri       String
+  webhookUrl    String
+  allowedTokens String[]
+  createdAt     DateTime        @default(now())
+  payments      PaymentRecord[]
+}
+
+model PaymentRecord {
+  id           String        @id @default(uuid()) @db.Uuid
+  reference    String        @unique
+  merchantId   String        @db.Uuid
+  merchant     Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  status       PaymentStatus
+  txHash       String?
+  payer        String?
+  token        String
+  amount       String
+  settledAt    DateTime?
+  webhookFired Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+}
