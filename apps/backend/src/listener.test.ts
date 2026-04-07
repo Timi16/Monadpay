@@ -4,6 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
+import type { BaseContract, ContractTransactionResponse } from "ethers";
 import { ContractFactory, JsonRpcProvider, Wallet } from "ethers";
 import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -17,6 +18,25 @@ const hasAnvil = spawnSync("anvil", ["--version"], { stdio: "ignore" }).status =
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const runIntegration = hasAnvil && hasDatabase;
 const describeIntegration = runIntegration ? describe : describe.skip;
+
+type RouterContract = BaseContract & {
+  waitForDeployment(): Promise<RouterContract>;
+  getAddress(): Promise<string>;
+  payWithToken(
+    paymentReference: string,
+    merchant: string,
+    token: string,
+    amount: bigint,
+    memo: string
+  ): Promise<ContractTransactionResponse>;
+};
+
+type MockTokenContract = BaseContract & {
+  waitForDeployment(): Promise<MockTokenContract>;
+  getAddress(): Promise<string>;
+  mint(to: string, amount: bigint): Promise<ContractTransactionResponse>;
+  approve(spender: string, amount: bigint): Promise<ContractTransactionResponse>;
+};
 
 describeIntegration("listener integration", () => {
   const httpUrl = "http://127.0.0.1:8547";
@@ -81,7 +101,7 @@ describeIntegration("listener integration", () => {
         routerArtifact.bytecode.object,
         wallet
       );
-      const router = await routerFactory.deploy();
+      const router = (await routerFactory.deploy()) as RouterContract;
       await router.waitForDeployment();
 
       const tokenFactory = new ContractFactory(
@@ -89,7 +109,7 @@ describeIntegration("listener integration", () => {
         mockErc20Artifact.bytecode.object,
         wallet
       );
-      const token = await tokenFactory.deploy();
+      const token = (await tokenFactory.deploy()) as MockTokenContract;
       await token.waitForDeployment();
 
       const reference =
