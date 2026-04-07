@@ -6,11 +6,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleTransactionRequest } from "./middleware";
 
 function buildApp(
-  buildTx: (payerAddress: string) => Promise<{ to: string; data: string; value?: string }>
+  buildTx: (
+    payerAddress: string,
+    req: express.Request
+  ) => Promise<{ to: string; data: string; value?: string }>,
+  getMerchantMetadata: (req: express.Request) => Promise<{ label?: string; icon?: string }> | { label?: string; icon?: string } = () => ({})
 ) {
   const app = express();
   app.use(express.json());
-  app.all("/transaction", handleTransactionRequest(buildTx));
+  app.all("/merchant/:merchantId/transaction", handleTransactionRequest(buildTx, getMerchantMetadata));
   return app;
 }
 
@@ -26,21 +30,21 @@ const describeMiddleware = canBindLocalPort ? describe : describe.skip;
 
 describeMiddleware("handleTransactionRequest", () => {
   afterEach(() => {
-    delete process.env.MERCHANT_NAME;
-    delete process.env.MERCHANT_ICON_URL;
     delete process.env.MONAD_CHAIN_ID;
   });
 
-  it("GET returns label and icon", async () => {
-    process.env.MERCHANT_NAME = "MonadPay";
-    process.env.MERCHANT_ICON_URL = "https://example.com/icon.png";
-
-    const response = await request(buildApp(vi.fn())).get("/transaction");
+  it("GET returns merchant-specific label and icon", async () => {
+    const response = await request(
+      buildApp(vi.fn(), (req) => ({
+        label: `Merchant ${req.params.merchantId}`,
+        icon: `https://example.com/${req.params.merchantId}.png`,
+      }))
+    ).get("/merchant/merchant-123/transaction");
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      label: "MonadPay",
-      icon: "https://example.com/icon.png",
+      label: "Merchant merchant-123",
+      icon: "https://example.com/merchant-123.png",
     });
   });
 
@@ -52,12 +56,19 @@ describeMiddleware("handleTransactionRequest", () => {
       value: "0x0",
     });
 
-    const response = await request(buildApp(buildTx)).post("/transaction").send({
-      account: "0x000000000000000000000000000000000000dEaD",
-    });
+    const response = await request(buildApp(buildTx))
+      .post("/merchant/merchant-123/transaction")
+      .send({
+        account: "0x000000000000000000000000000000000000dEaD",
+      });
 
     expect(response.status).toBe(200);
-    expect(buildTx).toHaveBeenCalledWith("0x000000000000000000000000000000000000dEaD");
+    expect(buildTx).toHaveBeenCalledWith(
+      "0x000000000000000000000000000000000000dEaD",
+      expect.objectContaining({
+        params: expect.objectContaining({ merchantId: "merchant-123" }),
+      })
+    );
     expect(response.body).toEqual({
       transaction: {
         to: "0x0000000000000000000000000000000000000001",
@@ -69,7 +80,9 @@ describeMiddleware("handleTransactionRequest", () => {
   });
 
   it("POST missing account returns 400", async () => {
-    const response = await request(buildApp(vi.fn())).post("/transaction").send({});
+    const response = await request(buildApp(vi.fn()))
+      .post("/merchant/merchant-123/transaction")
+      .send({});
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: "missing account" });
@@ -81,7 +94,7 @@ describeMiddleware("handleTransactionRequest", () => {
         throw new Error("boom");
       })
     )
-      .post("/transaction")
+      .post("/merchant/merchant-123/transaction")
       .send({ account: "0x000000000000000000000000000000000000dEaD" });
 
     expect(response.status).toBe(500);

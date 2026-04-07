@@ -1,13 +1,26 @@
 import type { Request, Response } from "express";
 
+type MerchantMetadata = {
+  label?: string;
+  icon?: string;
+};
+
+type TransactionRequest = {
+  to: string;
+  data: string;
+  value?: string;
+};
+
 export function handleTransactionRequest(
-  buildTx: (payerAddress: string) => Promise<{ to: string; data: string; value?: string }>
+  buildTx: (payerAddress: string, req: Request) => Promise<TransactionRequest>,
+  getMerchantMetadata: (req: Request) => Promise<MerchantMetadata> | MerchantMetadata = () => ({})
 ): (req: Request, res: Response) => Promise<void> {
   return async (req, res) => {
     if (req.method === "GET") {
+      const metadata = await getMerchantMetadata(req);
       res.json({
-        label: process.env.MERCHANT_NAME ?? "",
-        icon: process.env.MERCHANT_ICON_URL ?? "",
+        label: metadata.label ?? "",
+        icon: metadata.icon ?? "",
       });
       return;
     }
@@ -24,7 +37,7 @@ export function handleTransactionRequest(
     }
 
     try {
-      const transaction = await buildTx(account);
+      const transaction = await buildTx(account, req);
       res.json({
         transaction: {
           ...transaction,

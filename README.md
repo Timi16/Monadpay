@@ -1,6 +1,7 @@
 # MonadPay
 
 MonadPay is a Solana Pay style payment flow for Monad EVM, split into contracts, an SDK, and a webhook-driven backend.
+Merchant identity is multi-tenant and database-backed; merchant metadata is not global `.env` config.
 
 ## Architecture
 
