@@ -1,10 +1,10 @@
 import { Interface, ZeroAddress, getAddress, getBytes, hexlify } from "ethers";
 import type { Provider } from "ethers";
 
-import routerArtifact from "../../../contracts/out/MonadPayRouter.sol/MonadPayRouter.json";
-import type { VerifyPaymentResult } from "../../../types/index";
+import { monadPayRouterAbi } from "./contracts";
+import type { VerifyPaymentResult } from "./types";
 
-const routerInterface = new Interface(routerArtifact.abi);
+const routerInterface = new Interface(monadPayRouterAbi);
 const paymentReceivedEvent = routerInterface.getEvent("PaymentReceived");
 
 function invalidResult(txHash: string, blockNumber = 0): VerifyPaymentResult {

@@ -1,7 +1,7 @@
 import { ZeroAddress } from "ethers";
 import { describe, expect, it } from "vitest";
 
-import type { TransferRequestParams } from "../../../types/index";
+import type { TransferRequestParams } from "./types";
 import { createTransferRequest, isExpired, parsePaymentUrl } from "./url";
 
 describe("url", () => {

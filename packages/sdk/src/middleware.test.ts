@@ -100,4 +100,19 @@ describeMiddleware("handleTransactionRequest", () => {
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ error: "boom" });
   });
+
+  it("POST respects error status codes from buildTx", async () => {
+    const response = await request(
+      buildApp(async () => {
+        const error = new Error("payment not found") as Error & { statusCode?: number };
+        error.statusCode = 404;
+        throw error;
+      })
+    )
+      .post("/merchant/merchant-123/transaction")
+      .send({ account: "0x000000000000000000000000000000000000dEaD" });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "payment not found" });
+  });
 });

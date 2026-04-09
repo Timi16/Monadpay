@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "main": "dist/index.js",
   "scripts": {
+    "predev": "yarn workspace @monadpay/sdk build",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "prebuild": "yarn workspace @monadpay/sdk build",
     "build": "tsc -p tsconfig.json",
+    "pretest": "yarn workspace @monadpay/sdk build",
     "test": "vitest run",
     "prisma": "prisma"
   },

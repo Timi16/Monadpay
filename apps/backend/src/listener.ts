@@ -1,7 +1,8 @@
 import { Contract, WebSocketProvider, hexlify, isHexString } from "ethers";
 
-import routerArtifact from "../../../contracts/out/MonadPayRouter.sol/MonadPayRouter.json";
+import { monadPayRouterAbi } from "@monadpay/sdk";
 import { prisma } from "./db";
+import { getRouterAddress } from "./config";
 import { dispatchWebhook } from "./webhook";
 
 type ListenerOptions = {
@@ -34,7 +35,7 @@ function attachReconnect(
 
 export function startPaymentListener(options: ListenerOptions = {}): ListenerHandle {
   const wsUrl = options.wsUrl ?? process.env.MONAD_RPC_URL ?? "";
-  const routerAddress = options.routerAddress ?? process.env.ROUTER_CONTRACT_ADDRESS ?? "";
+  const routerAddress = options.routerAddress ?? getRouterAddress();
 
   if (!wsUrl || !routerAddress) {
     throw new Error("MONAD_RPC_URL and ROUTER_CONTRACT_ADDRESS are required");
@@ -51,7 +52,7 @@ export function startPaymentListener(options: ListenerOptions = {}): ListenerHan
     }
 
     provider = new WebSocketProvider(wsUrl);
-    contract = new Contract(routerAddress, routerArtifact.abi, provider);
+    contract = new Contract(routerAddress, monadPayRouterAbi, provider);
 
     const onPaymentReceived = async (
       paymentReference: unknown,

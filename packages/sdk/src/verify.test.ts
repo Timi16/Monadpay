@@ -1,10 +1,10 @@
 import { Interface, ZeroAddress } from "ethers";
 import { describe, expect, it, vi } from "vitest";
 
-import routerArtifact from "../../../contracts/out/MonadPayRouter.sol/MonadPayRouter.json";
+import { monadPayRouterAbi } from "./contracts";
 import { verifyPayment } from "./verify";
 
-const iface = new Interface(routerArtifact.abi);
+const iface = new Interface(monadPayRouterAbi);
 const txHash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const routerAddress = "0x0000000000000000000000000000000000000001";
 const merchant = "0x0000000000000000000000000000000000000002";

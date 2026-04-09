@@ -4,6 +4,7 @@ dist/
 coverage/
 cache/
 deployments/router.json
+deployments/router.*.json
 
 contracts/out/*
 !contracts/out/MonadPayRouter.sol/

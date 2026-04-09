@@ -1,8 +1,10 @@
-import { JsonRpcProvider, WebSocketProvider, hexlify, randomBytes } from "ethers";
+import { JsonRpcProvider, WebSocketProvider, getAddress, hexlify, randomBytes } from "ethers";
 import express from "express";
 
-import { createTransferRequest, verifyPayment } from "@monadpay/sdk";
+import { createTransferRequest, handleTransactionRequest, verifyPayment } from "@monadpay/sdk";
 import { prisma } from "./db";
+import { getMonadChainId, getRouterAddress } from "./config";
+import { assertPendingPayment, buildStoredPaymentTransaction } from "./payments";
 import { dispatchWebhook } from "./webhook";
 
 function getProvider() {
@@ -13,6 +15,7 @@ function getProvider() {
 export function createApiRouter() {
   const router = express.Router();
   const provider = getProvider();
+  const routerAddress = getRouterAddress();
 
   router.post("/payment/create", async (req, res) => {
     const { merchantId, amount, token, memo, expiresAt } = req.body ?? {};
@@ -28,16 +31,22 @@ export function createApiRouter() {
       return;
     }
 
+    const normalizedToken = getAddress(token);
+    if (!merchant.allowedTokens.includes(normalizedToken)) {
+      res.status(400).json({ error: "token not enabled for merchant" });
+      return;
+    }
+
     const reference = hexlify(randomBytes(32)).toLowerCase();
     const request = await createTransferRequest({
       reference,
       recipient: merchant.address,
       amount: BigInt(amount),
-      token,
+      token: normalizedToken,
       memo,
       expiresAt,
       label: merchant.name,
-      chainId: Number(process.env.MONAD_CHAIN_ID ?? 10143),
+      chainId: getMonadChainId(),
     });
 
     await prisma.paymentRecord.create({
@@ -45,8 +54,9 @@ export function createApiRouter() {
         reference,
         merchantId: merchant.id,
         status: "PENDING",
-        token,
+        token: normalizedToken,
         amount: String(amount),
+        memo,
       },
     });
 
@@ -54,6 +64,8 @@ export function createApiRouter() {
       reference,
       url: request.url,
       qrPng: request.qrPng.toString("base64"),
+      routerAddress,
+      transactionRequestUrl: `/api/payment/${reference}/transaction`,
     });
   });
 
@@ -86,7 +98,7 @@ export function createApiRouter() {
     const result = await verifyPayment(
       txHash,
       req.params.reference.toLowerCase(),
-      process.env.ROUTER_CONTRACT_ADDRESS ?? "",
+      routerAddress,
       provider
     );
 
@@ -122,12 +134,59 @@ export function createApiRouter() {
     }
 
     const merchant = await prisma.merchant.upsert({
-      where: { address },
-      update: { name, logoUri, webhookUrl, allowedTokens },
-      create: { address, name, logoUri, webhookUrl, allowedTokens },
+      where: { address: getAddress(address) },
+      update: {
+        name,
+        logoUri,
+        webhookUrl,
+        allowedTokens: allowedTokens.map((tokenAddress: string) => getAddress(tokenAddress)),
+      },
+      create: {
+        address: getAddress(address),
+        name,
+        logoUri,
+        webhookUrl,
+        allowedTokens: allowedTokens.map((tokenAddress: string) => getAddress(tokenAddress)),
+      },
     });
 
     res.json(merchant);
+  });
+
+  router.all(
+    "/payment/:reference/transaction",
+    handleTransactionRequest(
+      async (_payerAddress, req) => {
+        const reference = String(req.params.reference).toLowerCase();
+        const payment = await prisma.paymentRecord.findUnique({
+          where: { reference },
+          include: { merchant: true },
+        });
+
+        assertPendingPayment(payment);
+        return buildStoredPaymentTransaction(payment, routerAddress);
+      },
+      async (req) => {
+        const reference = String(req.params.reference).toLowerCase();
+        const payment = await prisma.paymentRecord.findUnique({
+          where: { reference },
+          include: { merchant: true },
+        });
+
+        assertPendingPayment(payment);
+        return {
+          label: payment.merchant.name,
+          icon: payment.merchant.logoUri,
+        };
+      }
+    )
+  );
+
+  router.get("/config", (_req, res) => {
+    res.json({
+      chainId: getMonadChainId(),
+      routerAddress,
+    });
   });
 
   router.get("/merchant/:id/stats", async (req, res) => {

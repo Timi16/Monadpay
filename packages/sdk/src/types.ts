@@ -68,3 +68,9 @@ export type PaymentRecord = {
   settledAt?: number;
   webhookFired: boolean;
 };
+
+export type PaymentTransaction = {
+  to: string;
+  data: string;
+  value: string;
+};

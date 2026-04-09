@@ -45,7 +45,12 @@ export function handleTransactionRequest(
         },
       });
     } catch (error) {
-      res.status(500).json({
+      const statusCode =
+        typeof (error as { statusCode?: number })?.statusCode === "number"
+          ? (error as { statusCode: number }).statusCode
+          : 500;
+
+      res.status(statusCode).json({
         error: error instanceof Error ? error.message : "failed to build transaction",
       });
     }

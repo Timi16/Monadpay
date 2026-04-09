@@ -35,6 +35,7 @@ model PaymentRecord {
   payer        String?
   token        String
   amount       String
+  memo         String?
   settledAt    DateTime?
   webhookFired Boolean       @default(false)
   createdAt    DateTime      @default(now())
