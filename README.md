@@ -19,9 +19,21 @@ The SDK now owns the router/escrow ABI surface and can build wallet-ready callda
 3. Run `yarn install`.
 4. Copy `.env.example` to `.env`.
 5. Run `forge test --offline`.
-6. Deploy with `forge script script/Deploy.s.sol:DeployRouter --rpc-url $MONAD_RPC_URL --broadcast`.
+6. Deploy with `yarn deploy:router`.
 7. Confirm `deployments/router.json` or `ROUTER_CONTRACT_ADDRESS` is available for the backend.
 8. Start the backend with `yarn workspace @monadpay/backend dev`.
+
+## Live Deployment
+
+`yarn deploy:router` loads `.env`, requires `MONAD_RPC_URL` and `PRIVATE_KEY`, runs the Foundry deploy script, and writes:
+
+- `deployments/router.json`
+- `deployments/router.<chainId>.json`
+
+Optional:
+
+- Set `VERIFY_DEPLOYMENT=1` to append `--verify`
+- Pass extra `forge script` args after the command, for example `yarn deploy:router -- --resume`
 
 ## SDK Example
 
@@ -67,6 +79,15 @@ console.log(result.valid);
 
 The backend exposes `GET` and `POST /api/payment/:reference/transaction`.
 `GET` returns merchant label/icon metadata and `POST` returns a router transaction payload with `to`, `data`, `value`, and `chainId`.
+
+## API Docs
+
+Frontend-facing OpenAPI docs are available at:
+
+- `GET /api/openapi.json`
+- `GET /api/docs`
+
+There is also a repo guide at [docs/frontend-integration.md](/Users/ik/Documents/Monadpay/docs/frontend-integration.md).
 
 ## Testnet Contract
 

@@ -7,6 +7,7 @@
     "apps/backend"
   ],
   "scripts": {
+    "deploy:router": "sh scripts/deploy-router.sh",
     "test:contracts": "forge test --offline -vvv",
     "test:sdk": "yarn workspace @monadpay/sdk test",
     "test:backend": "yarn workspace @monadpay/backend test",

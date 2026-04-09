@@ -102,7 +102,10 @@ export function createApiRouter() {
       provider
     );
 
-    res.json(result);
+    res.json({
+      ...result,
+      amount: result.amount.toString(),
+    });
   });
 
   router.get("/merchant/:id/payments", async (req, res) => {
